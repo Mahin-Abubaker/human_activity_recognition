@@ -1,0 +1,9 @@
+pytest==8.3.4
+mlflow==2.18.0
+pandas==2.2.2
+scikit-learn==1.5.1
+matplotlib==3.7.3
+azure-ai-ml==1.12.1
+fsspec
+seaborn
+#Please check the versions of older python before using this include like this pandas~=1.4
