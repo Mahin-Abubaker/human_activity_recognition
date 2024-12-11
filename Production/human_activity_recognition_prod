@@ -1,21 +1,21 @@
-import numpy as np 
 import pandas as pd 
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.linear_model import LogisticRegression
 class Experiment:
 
     def __init__(self, file_path):
         self.file_path = file_path
         self.data = None
         self.X_train, self.X_test, self.y_train, self.y_test = None, None, None, None
-
+        self.model = LogisticRegression(max_iter=10000)  # Initialize logistic regression model
     def load_data(self):
         try:
-            self.data = pd.read_csv(self.file_path)
+            selected_columns = ['sub', 'act','alx','aly','alz']
+            self.data = pd.read_csv(self.file_path,usecols=selected_columns)
             print(f"Dataset loaded successfully from {self.file_path}")
         except FileNotFoundError:
             print(f"Error: The file at {self.file_path} was not found.")
@@ -43,15 +43,21 @@ class Experiment:
             missing_values = self.data.isnull().sum()
             print("Missing values in each column:")
             print(missing_values)
+            required_columns = ["subject", "activity"]
+            if all(column in self.data.columns for column in required_columns):
+            # Remove rows where 'subject' or 'activity' has NaN
+                self.data = self.data.dropna(subset=required_columns)
+            print("Rows with NaN in 'subject' or 'activity' columns have been removed.")
+
         if self.data is not None:
             for column in self.data.columns:
                 if self.data[column].isnull().sum() > 0:
                     if strategy == "mean":
-                        self.data[column].fillna(self.data[column].mean(), inplace=True)
+                        self.data[column] = self.data[column].fillna(self.data[column].mean())                       
                     elif strategy == "median":
-                        self.data[column].fillna(self.data[column].median(), inplace=True)
+                        self.data[column] = self.data[column].fillna(self.data[column].median())
                     elif strategy == "mode":
-                        self.data[column].fillna(self.data[column].mode()[0], inplace=True)
+                        self.data[column] = self.data[column].fillna(self.data[column].mode()[0])
             print(f"Missing values handled using {strategy} strategy.")
         else:
             print("Dataset is not loaded yet.")
@@ -80,7 +86,7 @@ class Experiment:
     
     def encode_categorical_data(self):
         if self.data is not None:
-            categorical_columns = self.data.select_dtypes(include=['object', 'category']).columns
+            categorical_columns = self.data.select_dtypes(include=['category','object']).columns
             if not categorical_columns.empty:
                 print(f"Encoding categorical columns: {categorical_columns}")
                 le = LabelEncoder()
@@ -94,7 +100,8 @@ class Experiment:
     def split_features_labels(self, target_column):
         if self.data is not None:
             if target_column in self.data.columns:
-                self.X = self.data.drop(columns=[target_column])
+                # Drop the 'subject' column and use only relevant columns as features
+                self.X = self.data.drop(columns=[target_column, 'subject'])  # Drop 'subject' as well
                 self.y = self.data[target_column]
                 print(f"Features and labels split successfully. Target column: {target_column}")
             else:
@@ -102,7 +109,7 @@ class Experiment:
         else:
             print("Dataset is not loaded yet.")
 
-    def split_train_test(self, test_size=0.2, random_state=42):
+    def split_train_test(self, test_size=0.5, random_state=0):
         if hasattr(self, 'X') and hasattr(self, 'y'):
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
                 self.X, self.y, test_size=test_size, random_state=random_state)
@@ -118,13 +125,75 @@ class Experiment:
         
             # Apply scaling to the numeric data
             self.X_train[numeric_columns] = scaler.fit_transform(self.X_train[numeric_columns])
-            self.X_test[numeric_columns] = scaler.transform(self.X_test[numeric_columns])
-            print(self.X_train)
+            self.X_test[numeric_columns] = scaler.transform(self.X_test[numeric_columns])           
             print("Features scaled successfully.")
         else:
             print("Training and testing sets are not defined. Ensure to split the dataset first.")
 
+    def plot_activity_distribution(self,title):
+        if self.data is not None:
+            if 'activity' in self.data.columns:
+                plt.figure(figsize=(10, 8))
+                plt.title(title, fontsize=16)
+                sns.countplot(data=self.data, x='activity')
+                plt.xticks(rotation=90, fontsize=12)
+                plt.xlabel('activity', fontsize=14)
+                plt.ylabel('Count', fontsize=14)
+                plt.show()
+            else:
+                print("The 'Activity' column does not exist in the dataset.")
+        else:
+            print("Dataset is not loaded yet.")
+
+    def filter_activities(self, activities):
+        print(self.data)
+        if self.data is not None:
+            if "activity" in self.data.columns:                            
+                self.data = self.data[self.data["activity"].isin(activities)]
+                self.data["activity"] = self.data["activity"].apply(
+                    lambda x: x if x in activities else "0"
+                )
+                activity_counts = self.data["activity"].value_counts()  
+                print(f"Counts of selected activities: \n{activity_counts}")             
+            else:
+                print("The 'activity' column does not exist in the dataset.")                
+        else:
+            print("Dataset is not loaded yet.")
+
+    def train_logistic_regression(self):
+        if self.X_train is not None and self.y_train is not None:
+            # Fit the logistic regression model
+            self.model.fit(self.X_train, self.y_train)
+            print("Logistic Regression model trained successfully.")
+        else:
+            print("Training data is not available. Please split the data first.")
+
+    def evaluate_model(self):
+        if self.X_test is not None and self.y_test is not None:
+            # Predict the labels using the test set
+            y_pred = self.model.predict(self.X_test)
+            # Evaluate the model
+            accuracy = accuracy_score(self.y_test, y_pred)
+            print(f"Accuracy: {accuracy * 100:.2f}%")
+            print("Confusion Matrix:")
+            print(confusion_matrix(self.y_test, y_pred))
+            print("Classification Report:")
+            print(classification_report(self.y_test, y_pred))
+        else:
+            print("Test data is not available. Please split the data first.")
+
+    # def cross_validate_model(self):
+        # if self.X is not None and self.y is not None:
+        #     # Perform cross-validation
+        #     scores = cross_val_score(self.model, self.X, self.y, cv=5)
+        #     print(f"Cross-validation scores: {scores}")
+        #     print(f"Mean accuracy: {np.mean(scores) * 100:.2f}%")
+        # else:
+        #     print("Data is not available for cross-validation. Please split the data first.")
+
+
 if __name__ == "__main__":
+
     # Provide the path to your dataset
     file_path = 'dataset.csv'
     
@@ -134,27 +203,38 @@ if __name__ == "__main__":
     # Load the dataset
     experiment.load_data()
 
-    #rename columns
-    experiment.rename_columns({'time (s)': 'time', 'class': 'gesture'})
+     # #rename columns
+    experiment.rename_columns({'act': 'activity', 'sub': 'subject'})    
 
-    # Remove duplicate rows
-    experiment.remove_duplicates()
-    
+    # # # Remove duplicate rows
+    experiment.remove_duplicates()    
+
     # Check and handle missing values mean, median or mode
     experiment.handle_missing_values("mean")#Here I have used mean.
-
+   
     #Fix the datatypes of the columns which are in correct
     column_type_mapping = {
-        'time': 'datetime64[ns]',  # Convert 'time' to datetime type
-        'gesture': 'category'          # Convert 'gesture' to categorical type
+        'subject': 'string'  
     }
-    experiment.fix_incorrect_datatypes(column_type_mapping)
+    experiment.fix_incorrect_datatypes(column_type_mapping) 
 
-    # Encode categorical data
+    # Plot the bar diagram of all activities
+    experiment.plot_activity_distribution('Barplot of All Activities')
+
+    # Select 4 to 5 activities for the prediction
+    #Here I am selecting walking, jogging, cycling,jumping,sitting
+    #You can add more items here if you want more
+    selected_activities = ["Jogging", "Walking", "Jumping", "Cycling", "Sitting"]
+    experiment.filter_activities(selected_activities)
+
+    # Plot the bar diagram of selected activities
+    experiment.plot_activity_distribution('Barplot of Selected Activities')
+
+    #Encode categorical data
     experiment.encode_categorical_data()
     
     # Split the dataset into features and labels
-    target_column = 'gesture'  # Updated target column name
+    target_column = 'activity'  
     experiment.split_features_labels(target_column=target_column)
     
     # Split the dataset into training and testing sets
@@ -163,18 +243,9 @@ if __name__ == "__main__":
     # Scale the features
     experiment.scale_features()
 
-    # Display the dataset after cleaning
-    experiment.show_dataset()
-    plt.figure(figsize=(10,8))
-    plt.title('Barplot of Activity')
-    sns.countplot(experiment.X_train.gesture)
-    plt.xticks(rotation=90)
+    # Train logistic regression model
+    experiment.train_logistic_regression()
 
-# t['gesture'] = t['gesture'].replace({0: 'Move', 1: 'Calibrate', 2: 'Scan', 3: 'Return',4:'Idle'})
-# print(t.head())
-# plt.figure(figsize=(10,8))
-# plt.title('Barplot of Activity')
-# sns.countplot(t.gesture)
-# plt.xticks(rotation=90)
-# plt.show()
+    # Evaluate the model
+    experiment.evaluate_model()
 # #kcrossfull validation
