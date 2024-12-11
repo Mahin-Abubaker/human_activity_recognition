@@ -5,13 +5,23 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from sklearn.linear_model import LogisticRegression
+import argparse
 class Experiment:
 
-    def __init__(self, file_path):
-        self.file_path = file_path
+    def __init__(self):
+        self.file_path = None
         self.data = None
         self.X_train, self.X_test, self.y_train, self.y_test = None, None, None, None
         self.model = LogisticRegression(max_iter=10000)  # Initialize logistic regression model
+
+    def get_dataset_path_from_argument(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--dataset", type=str, required=True, help='human activity dataset path')
+        args = parser.parse_args()
+        self.file_path=args.dataset
+        # mlflow.autolog()
+        # mlflow.log_param("hello_param", "action_classifier")
+
     def load_data(self):
         try:
             selected_columns = ['sub', 'act','alx','aly','alz']
@@ -193,17 +203,16 @@ class Experiment:
 
 
 if __name__ == "__main__":
-
-    # Provide the path to your dataset
-    file_path = 'dataset.csv'
     
     # Create an instance of Experiment
-    experiment = Experiment(file_path)
+    experiment = Experiment()
     
+    #Set dataset path
+    experiment.get_dataset_path_from_argument()
     # Load the dataset
     experiment.load_data()
 
-     # #rename columns
+    #rename columns
     experiment.rename_columns({'act': 'activity', 'sub': 'subject'})    
 
     # # # Remove duplicate rows
@@ -249,3 +258,4 @@ if __name__ == "__main__":
     # Evaluate the model
     experiment.evaluate_model()
 # #kcrossfull validation
+#52874332-1ce3-4393-a130-2534bbfd30f4 subscription id

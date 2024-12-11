@@ -1,0 +1,11 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+code: .
+command: python human_activity_recognition_prod.py --dataset ${{ inputs.dataset }}
+inputs:
+  dataset:
+    type: uri_file
+    path: azureml:har_dataset:1
+environment: azureml://registries/azureml/environments/sklearn-1.1/versions/14
+compute: har-comp-name
+experiment_name: human-activity-recognition-experiment_name
+description: human activity recognition using azure.
