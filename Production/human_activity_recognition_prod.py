@@ -1,11 +1,11 @@
 import pandas as pd 
 import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from sklearn.linear_model import LogisticRegression
 import argparse
+import mlflow
 class Experiment:
 
     def __init__(self):
@@ -19,7 +19,7 @@ class Experiment:
         parser.add_argument("--dataset", type=str, required=True, help='human activity dataset path')
         args = parser.parse_args()
         self.file_path=args.dataset
-        # mlflow.autolog()
+        mlflow.autolog()
         # mlflow.log_param("hello_param", "action_classifier")
 
     def load_data(self):
@@ -140,21 +140,6 @@ class Experiment:
         else:
             print("Training and testing sets are not defined. Ensure to split the dataset first.")
 
-    def plot_activity_distribution(self,title):
-        if self.data is not None:
-            if 'activity' in self.data.columns:
-                plt.figure(figsize=(10, 8))
-                plt.title(title, fontsize=16)
-                sns.countplot(data=self.data, x='activity')
-                plt.xticks(rotation=90, fontsize=12)
-                plt.xlabel('activity', fontsize=14)
-                plt.ylabel('Count', fontsize=14)
-                plt.show()
-            else:
-                print("The 'Activity' column does not exist in the dataset.")
-        else:
-            print("Dataset is not loaded yet.")
-
     def filter_activities(self, activities):
         print(self.data)
         if self.data is not None:
@@ -175,6 +160,16 @@ class Experiment:
             # Fit the logistic regression model
             self.model.fit(self.X_train, self.y_train)
             print("Logistic Regression model trained successfully.")
+                # Start MLflow run
+            with mlflow.start_run() as run:
+                # Log model
+                mlflow.sklearn.log_model(self.model, "model", registered_model_name="HumanActivityClassifier")
+
+                # Log additional parameters or metrics if needed
+                mlflow.log_param("model_type", "LogisticRegression")
+                mlflow.log_metric("training_accuracy", self.model.score(self.X_train, self.y_train))
+
+                print(f"Model registered with MLflow. Run ID: {run.info.run_id}")
         else:
             print("Training data is not available. Please split the data first.")
 
@@ -227,17 +222,11 @@ if __name__ == "__main__":
     }
     experiment.fix_incorrect_datatypes(column_type_mapping) 
 
-    # Plot the bar diagram of all activities
-    experiment.plot_activity_distribution('Barplot of All Activities')
-
     # Select 4 to 5 activities for the prediction
     #Here I am selecting walking, jogging, cycling,jumping,sitting
     #You can add more items here if you want more
     selected_activities = ["Jogging", "Walking", "Jumping", "Cycling", "Sitting"]
     experiment.filter_activities(selected_activities)
-
-    # Plot the bar diagram of selected activities
-    experiment.plot_activity_distribution('Barplot of Selected Activities')
 
     #Encode categorical data
     experiment.encode_categorical_data()
