@@ -5,7 +5,8 @@ scikit-learn==1.5.1
 matplotlib==3.7.3
 azure-ai-ml==1.12.1
 fsspec
-seabornazure-cli
+seaborn
+azure-cli
 #Please check the versions of older python before using this include like this pandas~=1.4
 #az ml job create -–file job.yaml -–resource-group har_resource_group --workspace-name har_workspace 
 #py -m pip
