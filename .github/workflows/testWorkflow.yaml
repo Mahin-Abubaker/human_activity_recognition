@@ -25,4 +25,4 @@ jobs:
       - name: add extension
         run: az extension add --name ml
       - name: create job
-        run: az ml job create --file production/job.yaml --resource-group assignment-snobin --workspace-name assignmentsnobin
+        run: az ml job create --file production/job.yaml --resource-group har_resource_group --workspace-name har_workspace
