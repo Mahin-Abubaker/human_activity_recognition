@@ -12,3 +12,5 @@ azure-cli
 #py -m pip
 #az extension add --name ml
 #az extension update --name ml
+#git config --global user.email "you@example.com"
+#git config --global user.name "Your Name"
