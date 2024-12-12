@@ -1,8 +1,10 @@
+import json
+import random
 import pandas as pd 
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score
 from sklearn.linear_model import LogisticRegression
 import argparse
 import mlflow
@@ -159,17 +161,7 @@ class Experiment:
         if self.X_train is not None and self.y_train is not None:
             # Fit the logistic regression model
             self.model.fit(self.X_train, self.y_train)
-            print("Logistic Regression model trained successfully.")
-                # Start MLflow run
-            with mlflow.start_run() as run:
-                # Log model
-                mlflow.sklearn.log_model(self.model, "model", registered_model_name="HumanActivityClassifier")
-
-                # Log additional parameters or metrics if needed
-                mlflow.log_param("model_type", "LogisticRegression")
-                mlflow.log_metric("training_accuracy", self.model.score(self.X_train, self.y_train))
-
-                print(f"Model registered with MLflow. Run ID: {run.info.run_id}")
+            print("Logistic Regression model trained successfully.")              
         else:
             print("Training data is not available. Please split the data first.")
 
@@ -179,7 +171,16 @@ class Experiment:
             y_pred = self.model.predict(self.X_test)
             # Evaluate the model
             accuracy = accuracy_score(self.y_test, y_pred)
-            print(f"Accuracy: {accuracy * 100:.2f}%")
+            accuracy_percentage = accuracy * 100
+            print(f"Accuracy: {accuracy_percentage:.2f}%")
+            mlflow.log_metric("Accuracy", accuracy_percentage) 
+            # Calculate AUC
+            Y_scores = self.model.predict_proba(self.X_test)
+            #print(Y_scores)
+            auc = roc_auc_score(self.Y_test, Y_scores, multi_class='ovr')
+            print(f'AUC: {auc}')
+            mlflow.log_metric(f'Model_AUC:', auc)
+
             print("Confusion Matrix:")
             print(confusion_matrix(self.y_test, y_pred))
             print("Classification Report:")
@@ -187,6 +188,12 @@ class Experiment:
         else:
             print("Test data is not available. Please split the data first.")
 
+    def random_prediction(self,location):
+        output_class = self.model.predict(self.X_test.iloc[[location]])
+        activity = json.dumps(output_class.tolist())
+        print(f"Predicted class: {activity}")
+        mlflow.log_metric(f'Predicted class:', {activity})
+        
     # def cross_validate_model(self):
         # if self.X is not None and self.y is not None:
         #     # Perform cross-validation
@@ -246,5 +253,8 @@ if __name__ == "__main__":
 
     # Evaluate the model
     experiment.evaluate_model()
+
+    # Make a random prediction
+    experiment.random_prediction(random.randint(0, 3000))
 # #kcrossfull validation
 #52874332-1ce3-4393-a130-2534bbfd30f4 subscription id
