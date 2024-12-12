@@ -188,11 +188,19 @@ class Experiment:
         else:
             print("Test data is not available. Please split the data first.")
 
-    def random_prediction(self,location):
-        output_class = self.model.predict(self.x_test.iloc[[location]])
-        activity = json.dumps(output_class.tolist())
+    def random_prediction(self, location):
+        # Predict the class label for the given location in the test set
+        output_class = self.model.predict(self.X_test.iloc[[location]])  # Predict the class
+
+        # Convert the output_class (array) to a string or log the actual label
+        activity = output_class[0]  # Get the first (and only) prediction, assuming it's a single label
+
+        # Print and log the predicted class
         print(f"Predicted class: {activity}")
-        mlflow.log_metric(f'Predicted class:', {activity})
+        
+        # Log the predicted class label as a string or an integer (if needed)
+        mlflow.log_metric(f'Predicted class label:', activity)  # Can log as integer or string
+
         
     # def cross_validate_model(self):
         # if self.X is not None and self.y is not None:
