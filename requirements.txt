@@ -14,3 +14,4 @@ seaborn
 #az extension update --name ml
 #git config --global user.email "you@example.com"
 #git config --global user.name "Your Name"
+#az ad sp create-for-rbac --name "human_activity_recognition" --role contributor --scopes /subscriptions/52874332-1ce3-4393-a130-2534bbfd30f4/resourceGroups/har_resource_group

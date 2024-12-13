@@ -190,7 +190,7 @@ class Experiment:
 
     def random_prediction(self, location):
         # Predict the class label for the given location in the test set
-        output_class = self.model.predict(self.X_test.iloc[[location]])  # Predict the class
+        output_class = self.model.predict(self.x_test.iloc[[location]])  # Predict the class
 
         # Convert the output_class (array) to a string or log the actual label
         activity = output_class[0]  # Get the first (and only) prediction, assuming it's a single label
