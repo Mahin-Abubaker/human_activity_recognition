@@ -1,6 +1,6 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
 code: .
-command: python -m human_activity_recognition_prod --dataset ${{ inputs.dataset }} 
+command: python -m unittest unittest integration
 inputs:
   dataset:
     type: uri_file  # Correct type for a file input

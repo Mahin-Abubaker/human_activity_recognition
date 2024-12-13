@@ -1,16 +1,22 @@
-FROM <MISSING>
+# Use a base image with Python
+FROM python:3.8-slim
 
-#Install gcc because we will need it to build some of the
-#python dependencies
+# Install gcc because we will need it to build some of the Python dependencies
 RUN apt-get update && apt-get install -y gcc
-#Update pip (pythons package manager)
+
+# Update pip (Python's package manager) and install virtualenv
 RUN python -m pip install --upgrade pip && pip install virtualenv
 
-#Copy in our model
-COPY irismdl /irismdl
+COPY datase /dataset
 
-#Install the model requirements
-RUN pip install -r  <MISSING>
+# Copy the requirements.txt file to install the necessary dependencies
+COPY requirements.txt /requirements.txt
 
-#Tell it how to run the model
-CMD ["mlflow", "models", "serve", "-h", "0.0.0.0", "-m", "irismdl", "--env-manager=local"]
+# Install the required Python dependencies
+RUN pip install -r /requirements.txt
+
+# Expose the port MLflow will serve the model on (default is 5001)
+EXPOSE 5001
+
+# Command to run the model using MLflow's model serve functionality
+CMD ["mlflow", "models", "serve", "-h", "0.0.0.0", "-m", "/irismdl", "--env-manager=local"]

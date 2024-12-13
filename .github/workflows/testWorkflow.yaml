@@ -1,27 +1,69 @@
 name: GitHub Actions Test
 run-name: ${{ github.actor }} workflow test
+
 on: 
   push:
     branches: 
       - 'main'
+
 jobs:
   testJob:
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Greet the user and start
       - run: echo "Hi! I'm running because of a ${{ github.event_name }} event."
       - run: echo "Checking out the repository from ${{ github.repository }}."
+      
+      # Step 2: Clone the repository
       - name: Clone repository code
         uses: actions/checkout@v4
       - run: echo "Repository cloned, I think I'm ready. The files look like this:"
+      
+      # Step 3: List all files in the repository
       - name: List files
         run: ls ${{ github.workspace }}
+      
+      # Step 4: Log into Azure
       - name: Log into Azure
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Test azure login by getting details
+      
+      # Step 5: Validate Azure login
+      - name: Test Azure login by getting account details
         run: az account show
-      - name: add extension
+      
+      # Step 6: Add Azure ML extension
+      - name: Add Azure ML extension
         run: az extension add --name ml
-      - name: create job
+      
+      # Step 7: Set up Python environment for tests
+      - name: Set up Python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'  # Specify the Python version
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Step 8: Verify model accuracy threshold
+      - name: Verify model accuracy
+        id: accuracy_check
+        run: |
+          # Run the accuracy check script with a threshold of 70%
+          python check_accuracy.py --threshold 70
+        # If the accuracy is below the threshold, the workflow will fail at this point.
+
+      # Step 9: Skip unit and integration tests if accuracy is below threshold
+      - name: Skip unit tests and integration tests if accuracy is below threshold
+        if: steps.accuracy_check.outcome == 'success'
+        run: echo "Accuracy is above threshold, running unit and integration tests."
+
+      # Step 10: Run deployment test only if accuracy is above threshold
+      - name: Run deployment test
+        if: steps.accuracy_check.outcome == 'success'
+        run: python -m unittest discover -s . -p "production.py"
+
+      # Step 11: Create Azure ML job only if accuracy is above 70%
+      - name: Create Azure ML job
+        if: steps.accuracy_check.outcome == 'success'
         run: az ml job create --file production/job.yaml --resource-group har_resource_group --workspace-name har_workspace
